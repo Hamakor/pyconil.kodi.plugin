@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.workshoptest" name="Your Add-on" version="0.1.0" provider-name="You">
+<addon id="plugin.video.workshoptest" name="Sctratchpad Plugin" version="0.1.0" provider-name="PyCon-IL 2017 Kodi Workshop">
   <requires>
     <import addon="xbmc.python" version="2.14.0"/>
   </requires>
@@ -7,9 +7,9 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">Your add-on's summary</summary>
+    <summary lang="en">Scratch Plugin for PyCon-IL/TAMI Workshop</summary>
     <description lang="en">
-      Your add-on's description
+      The plugin is used for testing and development during the workshop
     </description>
     <disclaimer lang="en"></disclaimer>
     <language>English</language>
@@ -19,7 +19,7 @@
     <website></website>
     <email></email>
     <source>https://github.com/Hamakor/pyconil.kodi.plugin</source>
-    <news>v0.1.0 (2015-5-29
+    <news>v0.1.0  (2017-5-29)
 - Initial version</news>
     <assets>
         <icon>resources/icon.png</icon>
