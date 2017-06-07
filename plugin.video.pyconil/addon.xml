@@ -7,11 +7,11 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en_us">Demo Plugin for PyCon-IL Workshop</summary>
-    <description lang="en_us">
+    <summary lang="en">Demo Plugin for PyCon-IL Workshop</summary>
+    <description lang="en">
       The plugin should allow browsing conference agenda, and playing session videos from previous years.
     </description>
-    <disclaimer lang="en_us"></disclaimer>
+    <disclaimer lang="en"></disclaimer>
     <language>English</language>
     <platform>all</platform>
     <license>MIT</license>
