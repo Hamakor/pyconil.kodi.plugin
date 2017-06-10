@@ -1,5 +1,5 @@
-import rpdb2 
-rpdb2.start_embedded_debugger('pw')
+#import rpdb2 
+#rpdb2.start_embedded_debugger('pw')
 
 import sys
 import urllib, urlparse
@@ -7,45 +7,41 @@ import xbmc, xbmcgui, xbmcplugin
 
 import content
 
-xbmc.log(str(sys.argv), xbmc.LOGNOTICE)
-
-# Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
-# Get the plugin handle as an integer number.
 _handle = int(sys.argv[1])
 
 def get_params(arg):
     qs = arg[1:] if arg.startswith("?") else arg
     d = urlparse.parse_qs(qs)
-    # TODO: find out why the values are all inside lists of length 1
-    # for now: just extract the strings
+    if not all([len(x)==1 for x in d.itervalues()]):
+        raise ValueError("Duplicate key in query string: "+qs)
     return {k:v[0] for k,v in d.iteritems()}
 
-# Get the "query" part of the URL (action and arguments)
 _params = get_params(sys.argv[2])
 
-xbmc.log(str(_params), xbmc.LOGNOTICE)
+xbmc.log("ADDON CALLED ---> url={0} : handle={1} : params={2}".format(
+    _url, _handle, _params), xbmc.LOGNOTICE)
 
 def get_url(**kwargs):
-    """
-    TODO: add credits
-    Create a URL for calling the plugin recursively from the given set of keyword arguments.
-    """
     return '{0}?{1}'.format(_url, urllib.urlencode(kwargs))
 
-def _add_main_item(title, url, is_folder):
+
+def _add_main_item(title, url, is_folder=True):
     "helper for main_menu"
     li = xbmcgui.ListItem(title)
     xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=is_folder)
     
 def main_menu():
-    _add_main_item('Speakers 2016', get_url(action="speakers16"), True)
-    _add_main_item('Test Videos', get_url(action="videos"), False)
+    _add_main_item('Speakers 2016', get_url(action="speakers16"))
+    _add_main_item('Test Videos', get_url(action="videos"))
     xbmcplugin.endOfDirectory(_handle)
 
 
+def speakers_menu(params):
+    pass
+
 def vid_menu(params):
-    #xbmcplugin.setContent(_handle, 'movies') # see # content: files, songs, artists, albums, movies, tvshows, episodes, musicvideos # http://mirrors.kodi.tv/docs/python-docs/13.0-gotham/xbmcplugin.html # look in 17.0 docs
+    #xbmcplugin.setContent(_handle, 'movies')
     
     li = xbmcgui.ListItem('My First Video!')
     xbmcplugin.addDirectoryItem(handle=_handle, url='/media/elements/media/pipi.mp4', listitem=li) # isfolder=False
@@ -57,7 +53,7 @@ def vid_menu(params):
 
 _action_table = {
     "videos": vid_menu,
-    #"speakers16":  speakers_menu
+    "speakers16":  speakers_menu
     }
 
 def route_action(params):

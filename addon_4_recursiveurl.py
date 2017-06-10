@@ -7,16 +7,14 @@ import xbmc, xbmcgui, xbmcaddon, xbmcplugin
 
 xbmc.log("ADDON CALLED ---> argv="+str(sys.argv), xbmc.LOGNOTICE)
 
-# Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
-# Get the plugin handle as an integer number.
 _handle = int(sys.argv[1])
 
 def get_params(arg):
     qs = arg[1:] if arg.startswith("?") else arg
     d = urlparse.parse_qs(qs)
-    # TODO: find out why the values are all inside lists of length 1
-    # for now: just extract the strings
+    if not all([len(x)==1 for x in d.itervalues()]):
+        raise ValueError("Duplicate key in query string: "+qs)
     return {k:v[0] for k,v in d.iteritems()}
 
 # Get the "query" part of the URL (action and arguments)
@@ -28,20 +26,16 @@ xbmc.log("ADDON CALLED ---> url={0} : handle={1} : params={2}".format(
 _addonname   = xbmcaddon.Addon().getAddonInfo('name')
 
 def get_url(**kwargs):
-    """
-    TODO: add credits
-    Create a URL for calling the plugin recursively from the given set of keyword arguments.
-    """
     return '{0}?{1}'.format(_url, urllib.urlencode(kwargs))
 
-def _add_main_item(title, url, is_folder):
+def _add_main_item(title, url, is_folder=True): 
     "helper for main_menu"
     li = xbmcgui.ListItem(title)
     xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=is_folder)
     
 def main_menu():
-    _add_main_item('Speakers 2016', get_url(action="speakers16"), True)
-    _add_main_item('Test Videos', get_url(action="videos"), True)
+    _add_main_item('Speakers 2016', get_url(action="speakers16"))
+    _add_main_item('Test Videos', get_url(action="videos"))
     xbmcplugin.endOfDirectory(_handle)
 
 
@@ -87,5 +81,4 @@ def route_action(params):
             raise ValueError('Invalid params: ' + str(params))
     
 if __name__ == '__main__':
-    data = content.EventData()
     route_action(_params)
