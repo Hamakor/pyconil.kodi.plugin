@@ -1,6 +1,8 @@
+import sys, os.path
 import json
 from urllib2 import urlopen
 
+this_dir = os.path.dirname(os.path.abspath(__file__))
 API_2016 = "http://pycon-il.s3-website-us-east-1.amazonaws.com/api/v1/{command}.js"
 
 def api_cmd(cmd):
@@ -15,17 +17,33 @@ class EventData(object):
     def __init__(self):
         sp = api_cmd("getSpeakers")
         self.speakerdb = {x["speakerId"]: x for x in sp["speakers"]}
-        self.days = api_cmd("getSessions")
+        self.days = api_cmd("getSessions")["days"]
+        self.vid_data = json.load(open(os.path.join(this_dir, "event_video.json")))
+        self._load_data()
+    
+    def _load_data(self):
+        self.eventdb = {}
+        for day in self.days:
+            for event in day["events"]:
+                self.eventdb[event["eventId"]] = event
+        
+        self.speaker_events = {}
+        for eid,event in self.eventdb.iteritems():
+            for speaker in event["speakers"]:
+                self.speaker_events.setdefault(speaker, []).append(eid)
+
+        self.event_video = {int(eid): vid
+                            for eid,vid in self.vid_data.iteritems()}
 
 if (0):
     ed = EventData()
     
 if (0):
-    #gs = api_cmd("getSessions")
+    sessions = api_cmd("getSessions")
     sp = api_cmd("getSpeakers")
     speakerdb = {x["speakerId"]: x for x in sp["speakers"]}
     
-    days = gs["days"]
+    days = sessions["days"]
     for day in days:
         print "date:", day["date"]
         for event in day["events"][:3]:
@@ -38,43 +56,3 @@ if (0):
             print event["text"]#event["description"]
             print "========================="
 
-tracks = [
-    #track 1
-    {"name":"track1",
-     "data": {
-        "room":1,
-        "talks":[
-            {"name":"talk11",
-             "speaker":"speaker1",
-             "abstract":
-"""
-Abstract of talk11
-"""
-            },
-            {"name":"talk12",
-             "speaker":"speaker2",
-             "abstract":
-"""
-Abstract of talk12
-"""
-            },
-        ] #end talks
-     } #end data
-    },
-
-    #track 2 
-    {"name":"track2",
-     "data": {
-        "room":2,
-        "talks":[
-            {"name":"talk2",
-             "speaker":"speaker3",
-             "abstract":
-"""
-Abstract of talk2
-"""
-             },
-        ] #end talks
-     } # end data
-    }
-]

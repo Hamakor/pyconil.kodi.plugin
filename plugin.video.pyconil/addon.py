@@ -4,8 +4,12 @@
 import sys
 import urllib, urlparse
 import xbmc, xbmcgui, xbmcplugin
-
+import html2text, dateutil.parser
 import content
+
+YT_VIDEO = "plugin://plugin.video.youtube/?path=/root/video&action=play_video&videoid={0}"
+YT_PLAYLIST = "plugin://plugin.video.youtube/?path=/root/video&action=play_all&playlist={0}"
+YT_IMG = "https://i.ytimg.com/vi/{0}/hqdefault.jpg"
 
 xbmc.log("ADDON CALLED ---> argv="+str(sys.argv),xbmc.LOGNOTICE)
 
@@ -50,18 +54,60 @@ def _speaker_fullname(sid):
 
 def speakers_menu(params):
     global _data
-    xbmcplugin.setContent(_handle, 'movies')
+    xbmcplugin.setContent(_handle, 'movies') #movies tvshows episodes musicvideos
+    
     for sid, speaker in _data.speakerdb.iteritems():
         li = xbmcgui.ListItem(_fullname(speaker))
+        li.setArt({
+            "poster": speaker["avatarImageURL"],
+            "icon": speaker["avatarImageURL"]
+            })
+        li.setInfo("video", {"plot": html2text.html2text(speaker["characteristic"])})
+        
         url = get_url(action="speaker_talks", speakerId=sid)
         xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=True)
+    
+    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL)
     xbmcplugin.endOfDirectory(_handle)
 
 def speaker_talks(params):
     global _data
+    sid = int(params["speakerId"])
+    xbmcplugin.setContent(_handle, 'movies') #movies tvshows episodes musicvideos
+
+    for eid in _data.speaker_events.get(sid,[]):
+        event = _data.eventdb[eid]
+        frdate = dateutil.parser.parse(event["from"])
+        li = xbmcgui.ListItem(event["name"])
+        li.setInfo("video", {
+            "title": event["name"],
+            "plot": html2text.html2text(event["text"]),
+            "premiered": frdate.strftime("%Y-%m-%d %H:%M"),
+            "date": frdate.strftime("%d.%m.%Y")
+            })
+        youtubeid = _data.event_video.get(eid)
+        if youtubeid is None:
+            url = get_url(action="no_video", eventId=eid)
+            xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=False)
+        else:
+            #TODO do we need IsPlayable?
+            li.setArt({
+                "icon": YT_IMG.format(youtubeid),
+                "poster": YT_IMG.format(youtubeid)
+                })
+            li.setProperty('IsPlayable', 'true')
+            url = YT_VIDEO.format(youtubeid)
+            xbmc.log("ADDON ---> adding url: ".format(url), xbmc.LOGNOTICE)
+            xbmcplugin.addDirectoryItem(
+                handle=_handle, url=url, listitem=li, isFolder=False)
+    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_DATE_TAKEN)
+    xbmcplugin.endOfDirectory(_handle)
+
+def no_video(params):
     xbmcgui.Dialog().ok(
-        "Speaker talks popup",
-        u"Speakers talks for {0} - not supported yet".format(_speaker_fullname(params["speakerId"]))
+        "No Video found",
+        u'No video found for talk: "{0}"'.format(
+            _data.eventdb[int(params["eventId"])]["name"])
     )
 
 def vid_menu(params):
@@ -78,7 +124,8 @@ def vid_menu(params):
 _action_table = {
     "videos": vid_menu,
     "speakers16":  speakers_menu,
-    "speaker_talks":  speaker_talks
+    "speaker_talks":  speaker_talks,
+    "no_video":  no_video
     }
 
 def route_action(params):
@@ -92,9 +139,9 @@ def route_action(params):
         try:
             xbmc.log("ADDON ---> Access actiontable: {0}, {1}".format(_action_table, params["action"]), xbmc.LOGNOTICE)
             action = _action_table[params["action"]]
-            xbmc.log("ADDON ---> calling", xbmc.LOGNOTICE)
+            #xbmc.log("ADDON ---> calling", xbmc.LOGNOTICE)
             action(params)
-            xbmc.log("ADDON ---> after calling", xbmc.LOGNOTICE)
+            #xbmc.log("ADDON ---> after calling", xbmc.LOGNOTICE)
         except KeyError:
             raise ValueError('Invalid params: ' + str(params))
     
