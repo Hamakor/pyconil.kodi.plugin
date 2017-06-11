@@ -40,8 +40,8 @@ def _add_main_item(title, url, is_folder=True):
     xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=is_folder)
     
 def main_menu():
-    _add_main_item('Speakers 2016', get_url(action="speakers16"))
-    _add_main_item('Test Videos', get_url(action="videos"))
+    _add_main_item('Speakers 2016', get_url(action="speakers_menu"))
+    _add_main_item('Test Videos', get_url(action="videos_menu"))
     xbmcplugin.endOfDirectory(_handle)
 
 
@@ -110,7 +110,7 @@ def no_video(params):
             _data.eventdb[int(params["eventId"])]["name"])
     )
 
-def vid_menu(params):
+def videos_menu(params):
     #xbmcplugin.setContent(_handle, 'movies')
     
     li = xbmcgui.ListItem('My First Video!')
@@ -122,8 +122,8 @@ def vid_menu(params):
     xbmcplugin.endOfDirectory(_handle)
 
 _action_table = {
-    "videos": vid_menu,
-    "speakers16":  speakers_menu,
+    "videos_menu": videos_menu,
+    "speakers_menu":  speakers_menu,
     "speaker_talks":  speaker_talks,
     "no_video":  no_video
     }
@@ -147,14 +147,15 @@ def route_action(params):
     
 if __name__ == '__main__':
     if _data is None:
-        import os.path, cPickle
-        if (os.path.isfile("/tmp/confdata.pickle")):
+        import os.path, cPickle, tempfile
+        cachepath = os.path.join(tempfile.gettempdir(),"confdata.pickle")
+        if (os.path.isfile(cachepath)):
             xbmc.log("ADDON ---> Rereading from file...", xbmc.LOGNOTICE)
-            _data = cPickle.load(open("/tmp/confdata.pickle"))
+            _data = cPickle.load(open(cachepath))
         else:
             xbmc.log("ADDON ---> Rereading via API...", xbmc.LOGNOTICE)
             _data = content.EventData()
-            cPickle.dump(_data, open("/tmp/confdata.pickle","w"))
+            cPickle.dump(_data, open(cachepath,"w"))
     else:
         xbmc.log("ADDON ---> EventData not empty", xbmc.LOGNOTICE)
         
