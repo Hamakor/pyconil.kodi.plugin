@@ -41,7 +41,7 @@ def _add_main_item(title, url, is_folder=True):
     
 def main_menu():
     _add_main_item('Speakers 2016', get_url(action="speakers_menu"))
-    _add_main_item('Test Videos', get_url(action="videos_menu"))
+    _add_main_item('More Videos', get_url(action="videos_menu"))
     xbmcplugin.endOfDirectory(_handle)
 
 
@@ -113,9 +113,10 @@ def no_video(params):
 def videos_menu(params):
     #xbmcplugin.setContent(_handle, 'movies')
     
-    li = xbmcgui.ListItem('My First Video!')
-    xbmcplugin.addDirectoryItem(handle=_handle, url='/media/elements/media/pipi.mp4', listitem=li) # isfolder=False
-    li2 = xbmcgui.ListItem('My second Video!')
+    li = xbmcgui.ListItem('2016 Keynote: Travis Oliphant')
+    li.setProperty('IsPlayable', 'true')
+    xbmcplugin.addDirectoryItem(handle=_handle, url='plugin://plugin.video.youtube/?path=/root/video&action=play_video&videoid=bH7UAQ3YKCk', listitem=li) # isfolder=False
+    li2 = xbmcgui.ListItem('Big Buck Bunny')
     xbmcplugin.addDirectoryItem(handle=_handle, url='rtsp://mpv.cdn3.bigCDN.com:554/bigCDN/_definst_/mp4:bigbuckbunnyiphone_400.mp4', listitem=li2)
     # Add a sort method for the virtual folder items (alphabetically, ignore articles)
     #xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
