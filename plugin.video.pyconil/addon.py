@@ -2,6 +2,7 @@
 #rpdb2.start_embedded_debugger('pw')
 
 import sys
+import datetime, time
 import urllib, urlparse
 import xbmc, xbmcgui, xbmcplugin
 import html2text, dateutil.parser
@@ -11,12 +12,25 @@ YT_VIDEO = "plugin://plugin.video.youtube/?path=/root/video&action=play_video&vi
 YT_PLAYLIST = "plugin://plugin.video.youtube/?path=/root/video&action=play_all&playlist={0}"
 YT_IMG = "https://i.ytimg.com/vi/{0}/hqdefault.jpg"
 
+def strpdate(s):
+    "parse date"
+    # datetime.strptime sometimes unpredictably behaves like None under Kodi.
+    # Workaround is to use time.strptime instead
+    # see https://forum.kodi.tv/showthread.php?tid=215213
+    return datetime.datetime(*time.strptime(s, "%Y-%m-%d")[:6]).date()
+
 xbmc.log("ADDON CALLED ---> argv="+str(sys.argv),xbmc.LOGNOTICE)
+
+# parse the parameters sent by Kodi (via sys.argv)
 
 _url = sys.argv[0]
 _handle = int(sys.argv[1])
 
 def get_params(arg):
+    """
+    Parse the URI query string (sent as parameter by Kodi).
+    Assure that each key appears only once, and returns the query as a dict
+    """
     qs = arg[1:] if arg.startswith("?") else arg
     d = urlparse.parse_qs(qs)
     if not all([len(x)==1 for x in d.itervalues()]):
@@ -33,17 +47,33 @@ _data = None
 def get_url(**kwargs):
     return '{0}?{1}'.format(_url, urllib.urlencode(kwargs))
 
+#TODO: also sub-divide by track!
+def _events_by_day(events):
+    by_day = {}
+    for e in events:
+        by_day.setdefault(e['from'].date(), []).append(e)
+    return by_day
 
 def _add_main_item(title, url, is_folder=True):
     "helper for main_menu"
     li = xbmcgui.ListItem(title)
     xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=is_folder)
-    
+
 def main_menu():
     _add_main_item('Speakers 2016', get_url(action="speakers_menu"))
+    for day in _events_by_day(_data.eventdb.itervalues()):
+        daystr = day.strftime('%Y-%m-%d')
+        _add_main_item(daystr+' agenda',
+                       get_url(action="day_agenda_menu", day=daystr))
     _add_main_item('More Videos', get_url(action="videos_menu"))
     xbmcplugin.endOfDirectory(_handle)
 
+
+# decorator for registering a function in the action table
+_action_table = {}
+def action(func):
+    _action_table[func.__name__] = func
+    return func
 
 def _fullname(speaker):
     return ' '.join([speaker["firstName"].rstrip(), speaker["lastName"]])
@@ -52,6 +82,7 @@ def _speaker_fullname(sid):
     global _data
     return _fullname(_data.speakerdb[int(sid)])
 
+@action
 def speakers_menu(params):
     global _data
     xbmcplugin.setContent(_handle, 'movies') #movies tvshows episodes musicvideos
@@ -70,6 +101,7 @@ def speakers_menu(params):
     xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL)
     xbmcplugin.endOfDirectory(_handle)
 
+@action
 def speaker_talks(params):
     global _data
     sid = int(params["speakerId"])
@@ -77,7 +109,7 @@ def speaker_talks(params):
 
     for eid in _data.speaker_events.get(sid,[]):
         event = _data.eventdb[eid]
-        frdate = dateutil.parser.parse(event["from"])
+        frdate = event["from"]
         li = xbmcgui.ListItem(event["name"])
         li.setInfo("video", {
             "title": event["name"],
@@ -103,6 +135,7 @@ def speaker_talks(params):
     xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_DATE_TAKEN)
     xbmcplugin.endOfDirectory(_handle)
 
+@action
 def no_video(params):
     xbmcgui.Dialog().ok(
         "No Video found",
@@ -110,6 +143,7 @@ def no_video(params):
             _data.eventdb[int(params["eventId"])]["name"])
     )
 
+@action
 def videos_menu(params):
     #xbmcplugin.setContent(_handle, 'movies')
     
@@ -122,13 +156,44 @@ def videos_menu(params):
     #xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
     xbmcplugin.endOfDirectory(_handle)
 
-_action_table = {
-    "videos_menu": videos_menu,
-    "speakers_menu":  speakers_menu,
-    "speaker_talks":  speaker_talks,
-    "no_video":  no_video
-    }
+def _agenda_title(event):
+    return "{0}-{1}: {2}".format(event['from'].strftime('%H:%M'),
+                                 event['to'].strftime('%H:%M'),
+                                 event['name'])
 
+@action
+def day_agenda_menu(params):
+    xbmc.log("ADDON ---> day_agenda_menu: params={0}".format(params), xbmc.LOGNOTICE)
+    ### similar to speaker_taks: todo: refactor
+    xbmcplugin.setContent(_handle, 'movies') #movies tvshows episodes musicvideos
+    day = strpdate(params['day'])
+    for event in _events_by_day(_data.eventdb.itervalues())[day]:
+        frdate = event["from"]
+        li = xbmcgui.ListItem(_agenda_title(event))
+        li.setInfo("video", {
+            "title": event["name"],
+            "plot": html2text.html2text(event["text"]),
+            "premiered": frdate.strftime("%Y-%m-%d %H:%M"),
+            "date": frdate.strftime("%d.%m.%Y")
+            })
+        youtubeid = event.get("link")
+        if not youtubeid:
+            url = get_url(action="no_video", eventId=event['eventId'])
+            xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=False)
+        else:
+            #TODO do we need IsPlayable?
+            li.setArt({
+                "icon": YT_IMG.format(youtubeid),
+                "poster": YT_IMG.format(youtubeid)
+                })
+            li.setProperty('IsPlayable', 'true')
+            url = YT_VIDEO.format(youtubeid)
+            xbmc.log("ADDON ---> adding url: ".format(url), xbmc.LOGNOTICE)
+            xbmcplugin.addDirectoryItem(
+                handle=_handle, url=url, listitem=li, isFolder=False)
+    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_DATE_TAKEN)
+    xbmcplugin.endOfDirectory(_handle)
+    
 def route_action(params):
     """
     Router function that calls other functions
@@ -157,6 +222,11 @@ if __name__ == '__main__':
             xbmc.log("ADDON ---> Rereading via API...", xbmc.LOGNOTICE)
             _data = content.EventData()
             cPickle.dump(_data, open(cachepath,"w"))
+        # data times should already be parsed
+        for event in _data.eventdb.itervalues():
+            event['from'] = dateutil.parser.parse(event['from'])
+            event['to'] = dateutil.parser.parse(event['to'])
+        
     else:
         xbmc.log("ADDON ---> EventData not empty", xbmc.LOGNOTICE)
         
