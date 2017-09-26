@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.pyconil" name="PyCon-IL Conference data" version="0.1.0" provider-name="PyCon-IL 2017 Kodi Workshop">
+<addon id="plugin.video.pyconil" name="PyCon-IL Conference data" version="0.2.0" provider-name="PyCon-IL 2017 Kodi Workshop">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.dateutil" version="2.5.3"/>
@@ -22,8 +22,13 @@
     <website></website>
     <email></email>
     <source>https://github.com/Hamakor/pyconil.kodi.plugin</source>
-    <news>v0.1.0  (2017-5-29)
-- Initial version</news>
+    <news>v0.2.0  (milestone)
+- Support agenda (event/day) menus.
+- Different backend, supporting 2017 data.
+
+v0.1.0  (2017-5-29)
+- Initial version
+</news>
     <assets>
         <icon>resources/icon.png</icon>
         <fanart>resources/fanart.jpg</fanart>

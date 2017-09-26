@@ -1,0 +1,4 @@
+This directory contains various code pieces which were used to scrape
+up the data during preparation of the plugin.
+The data itself gets integrated into the backend model, but we keep the
+tools since we will probably need to do similar things in the future.

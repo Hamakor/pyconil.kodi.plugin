@@ -2,12 +2,20 @@ import sys, os.path
 import json
 from urllib2 import urlopen
 
+#TODO: read _old and the API uri from config
+
+#API_2016 = "http://pycon-il.s3-website-us-east-1.amazonaws.com/api/v1/{command}.js"; _old=True
+#API_2016 = "http://localhost:8080/api/pyconil2016_old/{command}.js"; _old=True
+#API_2016 = "http://localhost:8080/api/pyconil2016/{command}"; _old=False
+#API_2016 = "http://wiki.python.org.il:9090/api/pyconil2016_old/{command}.js"; _old=True
+API_2016 = "http://wiki.python.org.il:9090/api/pyconil2016/{command}"; _old=False
+
 this_dir = os.path.dirname(os.path.abspath(__file__))
-API_2016 = "http://pycon-il.s3-website-us-east-1.amazonaws.com/api/v1/{command}.js"
+
 
 def api_cmd(cmd):
     url = API_2016.format(command=cmd)
-    return json.loads( urlopen(url).read() )
+    return json.load(urlopen(url))
 
 def prt_speaker(spk):
     print spk["firstName"], spk["lastName"], spk["avatarImageURL"]
@@ -18,7 +26,8 @@ class EventData(object):
         sp = api_cmd("getSpeakers")
         self.speakerdb = {x["speakerId"]: x for x in sp["speakers"]}
         self.days = api_cmd("getSessions")["days"]
-        self.vid_data = json.load(open(os.path.join(this_dir, "event_video.json")))
+        if _old:
+            self.vid_data = json.load(open(os.path.join(this_dir, "event_video.json")))
         self._load_data()
     
     def _load_data(self):
@@ -32,8 +41,13 @@ class EventData(object):
             for speaker in event["speakers"]:
                 self.speaker_events.setdefault(speaker, []).append(eid)
 
-        self.event_video = {int(eid): vid
-                            for eid,vid in self.vid_data.iteritems()}
+        if _old:
+            self.event_video = {
+                int(eid): vid
+                for eid,vid in self.vid_data.iteritems()}
+            #
+            for eid,vid in self.vid_data.iteritems():
+                self.eventdb[int(eid)]["link"] = vid
 
 if (0):
     ed = EventData()

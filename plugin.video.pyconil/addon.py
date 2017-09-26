@@ -85,8 +85,8 @@ def speaker_talks(params):
             "premiered": frdate.strftime("%Y-%m-%d %H:%M"),
             "date": frdate.strftime("%d.%m.%Y")
             })
-        youtubeid = _data.event_video.get(eid)
-        if youtubeid is None:
+        youtubeid = event.get("link")
+        if not youtubeid:
             url = get_url(action="no_video", eventId=eid)
             xbmcplugin.addDirectoryItem(handle=_handle, url=url, listitem=li, isFolder=False)
         else:
